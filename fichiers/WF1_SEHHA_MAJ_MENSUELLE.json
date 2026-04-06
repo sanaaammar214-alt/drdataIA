@@ -1,0 +1,219 @@
+{
+  "name": "WF1 — SEHHA DATA · Mise à jour mensuelle",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 1 * *"
+            }
+          ]
+        }
+      },
+      "name": "Cron 1er du mois",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "id": "node-cron"
+    },
+    {
+      "parameters": {
+        "url": "https://www.sante.gov.ma/Publications/Etudes_enquete/Pages/default.aspx",
+        "options": {}
+      },
+      "name": "GET site Ministere Sante",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        480,
+        300
+      ],
+      "id": "node-http",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.statusCode }}",
+              "operation": "equal",
+              "value2": 200
+            }
+          ]
+        }
+      },
+      "name": "Site accessible ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        720,
+        300
+      ],
+      "id": "node-if"
+    },
+    {
+      "parameters": {
+        "fromEmail": "ton.email@gmail.com",
+        "toEmail": "ton.email@gmail.com",
+        "subject": "SEHHA DATA — Bulletin Sante disponible, action requise",
+        "text": "=Bonjour,\n\nLe site du Ministere de la Sante est accessible ce jour ({{ $now.format('DD/MM/YYYY') }}).\n\nActions a effectuer :\n1. Consulter le bulletin epidemio : https://www.sante.gov.ma/Publications\n2. Ajouter les nouvelles lignes dans l'onglet Donnees_brutes du Google Sheets\n3. Declencher manuellement WF2 apres la saisie\n\nDelai cible : mise a jour dans les 7 jours.\n\n-- SEHHA DATA Pipeline WF1",
+        "options": {}
+      },
+      "name": "Email bulletin disponible",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        960,
+        180
+      ],
+      "id": "node-email-ok"
+    },
+    {
+      "parameters": {
+        "fromEmail": "ton.email@gmail.com",
+        "toEmail": "ton.email@gmail.com",
+        "subject": "SEHHA DATA — Site Ministere Sante inaccessible",
+        "text": "=Le site sante.gov.ma n'a pas repondu le {{ $now.format('DD/MM/YYYY') }}.\n\nVerifier manuellement : https://www.sante.gov.ma\n\n-- SEHHA DATA Pipeline WF1",
+        "options": {}
+      },
+      "name": "Email site inaccessible",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        960,
+        420
+      ],
+      "id": "node-email-ko"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1qW4_4h6kcwDWxUmWMH3LNhv_gedQmngn",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Log_mises_à_jour",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "name": "Log dans Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1200,
+        300
+      ],
+      "id": "node-log"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    ID_Log: 'auto-' + Date.now(),\n    Date: new Date().toLocaleDateString('fr-FR'),\n    Source: 'WF1 n8n (auto)',\n    Maladie: 'Tous',\n    Region: 'National',\n    Annee_donnee: new Date().getFullYear().toString(),\n    Valeur_avant: '-',\n    Valeur_apres: '-',\n    Type_operation: 'VERIF. MENSUELLE',\n    Auteur: 'Cron WF1',\n    Commentaire: 'Rappel automatique ' + new Date().toLocaleDateString('fr-FR')\n  }\n}];"
+      },
+      "name": "Preparer log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        300
+      ],
+      "id": "node-prep-log"
+    }
+  ],
+  "connections": {
+    "Cron 1er du mois": {
+      "main": [
+        [
+          {
+            "node": "GET site Ministere Sante",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET site Ministere Sante": {
+      "main": [
+        [
+          {
+            "node": "Site accessible ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Site accessible ?": {
+      "main": [
+        [
+          {
+            "node": "Email bulletin disponible",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email site inaccessible",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email bulletin disponible": {
+      "main": [
+        [
+          {
+            "node": "Preparer log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email site inaccessible": {
+      "main": [
+        [
+          {
+            "node": "Preparer log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparer log": {
+      "main": [
+        [
+          {
+            "node": "Log dans Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "pinData": {}
+}
