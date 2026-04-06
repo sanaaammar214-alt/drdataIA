@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Syne, DM_Sans } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
-const inter = Inter({ subsets: ["latin"] });
+const syne = Syne({ subsets: ["latin"], weight: ["700", "800"], variable: '--font-syne' });
+const dmSans = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "700"], variable: '--font-dmsans' });
 
 export const metadata: Metadata = {
-  title: "SEHHA DATA - Tableau de bord épidémiologique marocain",
+  title: "SEHHA DATA - Health-Tech Platform",
   description: "L'intelligence artificielle au service de la santé publique marocaine. Détection et alertes épidémiologiques.",
 };
 
@@ -17,10 +18,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className="scroll-smooth">
-      <body className={`${inter.className} min-h-screen flex flex-col`}>
+    <html lang="fr" className={`${syne.variable} ${dmSans.variable} scroll-smooth`}>
+      <body className="min-h-screen flex flex-col font-sans bg-[#0B1E3E] text-[#E8F4FD]">
+        <div className="fixed inset-0 dot-grid-overlay pointer-events-none z-0"></div>
+        <div className="fixed inset-0 radial-glow pointer-events-none z-0"></div>
         <Navbar />
-        <main className="flex-grow pt-16">
+        <main className="flex-grow pt-[73px] relative z-10 w-full max-w-[100vw] overflow-x-hidden">
           {children}
         </main>
         <Footer />

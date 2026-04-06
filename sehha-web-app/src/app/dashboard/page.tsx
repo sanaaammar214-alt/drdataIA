@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle, TrendingUp, TrendingDown, Database, Activity, ShieldAlert, BookOpen, Layers } from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, ReferenceLine, PieChart, Pie, Cell } from 'recharts';
+import { AlertTriangle, TrendingUp, TrendingDown, Database, Activity, ShieldAlert, Layers } from 'lucide-react';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 // --- DATA MOCKS ---
 
@@ -52,17 +52,40 @@ const alertData = [
 ];
 
 const COLORS = {
-  primary: "#0ea5e9", // bleu médical
-  critique: "#ef4444", // rouge
-  depasse: "#f97316", // orange
-  ok: "#22c55e", // vert
-  gray: "#94a3b8"
+  primary: "#00D4FF", // cyan accent
+  critique: "#EF4444", // rouge
+  depasse: "#F97316", // orange
+  ok: "#22C55E", // vert
+  gray: "#7A9CBD" // textmuted
 };
 
 const getStatusColor = (status: string) => {
   if (status === 'CRITIQUE') return COLORS.critique;
   if (status === 'DEPASSE') return COLORS.depasse;
   return COLORS.ok;
+};
+
+const getStatusClass = (status: string) => {
+  if (status === 'CRITIQUE') return 'status-red';
+  if (status === 'DEPASSE') return 'status-orange';
+  return 'status-green';
+};
+
+// Custom tooltip for dark mode Recharts
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-[#101F38] border border-[#00D4FF]/20 p-3 rounded-md shadow-2xl">
+        <p className="font-display font-bold text-white mb-2">{label}</p>
+        {payload.map((entry: any, index: number) => (
+          <p key={index} style={{ color: entry.color }} className="text-sm font-medium">
+            {entry.name} : {entry.value}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
 };
 
 // --- COMPONENTS ---
@@ -79,25 +102,25 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="bg-[#f3f4f6]" style={{ fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif' }}>
+    <div className="w-full relative z-10 font-sans min-h-[calc(100vh-73px)] pb-24">
       
       {/* HEADER & SLICERS */}
-      <div className="bg-white border-b border-gray-200 shadow-sm pt-6 px-8 pb-4">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800 flex items-center">
-             <Layers className="w-8 h-8 text-[#0ea5e9] mr-3" />
-             SEHHA DATA صحة داتا
+      <div className="bg-[#101F38]/90 backdrop-blur-md border-b border-[#00D4FF]/10 pt-6 px-8 pb-4 sticky top-[72px] z-40">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-6">
+          <h1 className="text-3xl font-display font-extrabold text-[#E8F4FD] flex items-center tracking-tight">
+             <Layers className="w-8 h-8 text-[#00D4FF] mr-3" />
+             Cockpit Analytique
           </h1>
-          <div className="flex space-x-4 bg-gray-50 p-2 rounded-lg border border-gray-200">
+          <div className="flex space-x-4 bg-[#0B1E3E] p-2 rounded-lg border border-[#00D4FF]/20">
              <div className="flex flex-col">
-                <label className="text-xs text-gray-500 font-semibold mb-1 uppercase">Année</label>
-                <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} className="text-sm bg-white border border-gray-300 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-[#0ea5e9]">
+                <label className="text-[10px] text-[#7A9CBD] font-display font-bold mb-1 uppercase tracking-wider">Année</label>
+                <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} className="text-sm bg-[#152843] border border-[#00D4FF]/20 text-white rounded px-3 py-1 outline-none focus:border-[#00D4FF] focus:ring-1 focus:ring-[#00D4FF]/50 transition-all">
                    {['2019', '2020', '2021', '2022', '2023'].map(y => <option key={y}>{y}</option>)}
                 </select>
              </div>
              <div className="flex flex-col">
-                <label className="text-xs text-gray-500 font-semibold mb-1 uppercase">Région</label>
-                <select value={regionFilter} onChange={(e) => setRegionFilter(e.target.value)} className="text-sm bg-white border border-gray-300 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-[#0ea5e9]">
+                <label className="text-[10px] text-[#7A9CBD] font-display font-bold mb-1 uppercase tracking-wider">Région</label>
+                <select value={regionFilter} onChange={(e) => setRegionFilter(e.target.value)} className="text-sm bg-[#152843] border border-[#00D4FF]/20 text-white rounded px-3 py-1 outline-none focus:border-[#00D4FF] focus:ring-1 focus:ring-[#00D4FF]/50 transition-all">
                    <option>Toutes les régions</option>
                    {regionData.map(r => <option key={r.region}>{r.region}</option>)}
                 </select>
@@ -106,7 +129,7 @@ export default function DashboardPage() {
         </div>
 
         {/* TAB NAVIGATION */}
-        <div className="flex space-x-1 border-b border-gray-200 overflow-x-auto pb-px">
+        <div className="flex space-x-2 overflow-x-auto pb-1 hide-scrollbar">
           {[
             { id: 1, name: "Vue Nationale" },
             { id: 2, name: "Disparités Régionales" },
@@ -116,7 +139,8 @@ export default function DashboardPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-6 py-3 font-semibold text-sm rounded-t-lg transition-colors whitespace-nowrap ${activeTab === tab.id ? 'bg-[#0ea5e9] text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              className={`px-6 py-3 font-display font-bold uppercase tracking-wider text-[11px] rounded transition-all whitespace-nowrap 
+                ${activeTab === tab.id ? 'bg-[#00D4FF] text-[#0B1E3E] shadow-[0_0_15px_rgba(0,212,255,0.3)]' : 'bg-[#152843] text-[#7A9CBD] border border-[#00D4FF]/10 hover:bg-[#101F38] hover:text-[#E8F4FD]'}`}
             >
               {tab.name}
             </button>
@@ -125,29 +149,30 @@ export default function DashboardPage() {
       </div>
 
       {/* DASHBOARD CONTENT SPACE */}
-      <div className="p-8 min-h-[calc(100vh-280px)]">
+      <div className="p-4 sm:p-8">
         
         {/* ======================= TAB 1 ======================== */}
         {activeTab === 1 && (
-          <div className="animate-in fade-in duration-300">
-             <div className="mb-6 flex justify-between items-end">
-                <h2 className="text-xl font-bold text-gray-800">Top 5 Maladies Prioritaires · Maroc 2019-2023</h2>
+          <div className="animate-in fade-in duration-500">
+             <div className="mb-8">
+                <h2 className="text-2xl font-display font-bold text-[#E8F4FD]">Tendances Prioritaires · 2019-2023</h2>
              </div>
              
              {/* 5 KPI CARDS */}
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
                {kpiData.map((kpi, idx) => (
-                  <div key={idx} className="bg-white p-4 rounded-xl shadow-sm border-l-4" style={{ borderColor: getStatusColor(kpi.statut) }}>
-                     <h3 className="text-sm font-semibold text-gray-500 mb-2">{kpi.maladie}</h3>
-                     <div className="flex justify-between items-baseline mb-2">
-                        <span className="text-2xl font-bold text-gray-800">{kpi.valeur}</span>
-                        {kpi.tendance === 'up' ? <TrendingUp className="w-5 h-5 text-red-500" /> : <TrendingDown className="w-5 h-5 text-green-500" />}
+                  <div key={idx} className={`alert-data-card p-4 ${getStatusClass(kpi.statut)}`}>
+                     <h3 className="font-display font-bold text-[13px] uppercase tracking-wider text-[#7A9CBD] mb-2">{kpi.maladie}</h3>
+                     <div className="flex justify-between items-baseline mb-4">
+                        <span className="text-3xl font-display font-[300] text-white tracking-tight">{kpi.valeur}</span>
+                        {kpi.tendance === 'up' ? <TrendingUp className="w-5 h-5 text-[#EF4444]" /> : <TrendingDown className="w-5 h-5 text-[#22C55E]" />}
                      </div>
-                     <div className="flex justify-between items-center text-xs">
-                        <span className="px-2 py-1 rounded font-bold text-white" style={{ backgroundColor: getStatusColor(kpi.statut) }}>
+                     <div className="flex justify-between items-center mt-auto">
+                        <span className="px-2 py-0.5 rounded text-[9px] font-display font-[800] uppercase tracking-wider items-center flex" style={{ backgroundColor: getStatusColor(kpi.statut) + '20', color: getStatusColor(kpi.statut), border: `1px solid ${getStatusColor(kpi.statut)}40` }}>
+                           <span className="w-1.5 h-1.5 rounded-full mr-1.5 shadow-sm" style={{ backgroundColor: getStatusColor(kpi.statut), boxShadow: `0 0 5px ${getStatusColor(kpi.statut)}` }}></span>
                            {kpi.statut}
                         </span>
-                        <span className="text-gray-400">Seuil: {kpi.seuil}</span>
+                        <span className="text-[10px] text-[#7A9CBD] opacity-70">Seuil: {kpi.seuil}</span>
                      </div>
                   </div>
                ))}
@@ -155,39 +180,42 @@ export default function DashboardPage() {
 
              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Evolution globale */}
-                <div className="lg:col-span-2 bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-                   <h3 className="text-md font-bold mb-4 text-gray-700">Évolution 5 ans 2019→2023 (Taux relatifs)</h3>
-                   <div className="h-[300px]">
+                <div className="lg:col-span-2 alert-data-card p-6">
+                   <h3 className="font-display font-bold text-[#E8F4FD] mb-6 tracking-wide">Évolution quinquennale (Taux relatifs)</h3>
+                   <div className="h-[320px]">
                       <ResponsiveContainer width="100%" height="100%">
                          <LineChart data={evolutionData}>
-                            <XAxis dataKey="year" stroke="#94a3b8" fontSize={12} />
-                            <YAxis stroke="#94a3b8" fontSize={12} />
-                            <RechartsTooltip />
-                            <Line type="monotone" dataKey="Diabète" stroke={COLORS.depasse} strokeWidth={2} />
-                            <Line type="monotone" dataKey="Hypertension" stroke={COLORS.critique} strokeWidth={2} />
-                            <Line type="monotone" dataKey="Cancer" stroke="#8b5cf6" strokeWidth={2} />
+                            <XAxis dataKey="year" stroke="#7A9CBD" fontSize={11} tickLine={false} axisLine={{ stroke: 'rgba(0,212,255,0.1)' }} />
+                            <YAxis stroke="#7A9CBD" fontSize={11} tickLine={false} axisLine={{ stroke: 'rgba(0,212,255,0.1)' }} />
+                            <RechartsTooltip content={<CustomTooltip />} />
+                            <Line type="monotone" dataKey="Diabète" stroke={COLORS.depasse} strokeWidth={3} dot={{ fill: COLORS.depasse, r: 4, strokeWidth: 0 }} activeDot={{ r: 6 }} />
+                            <Line type="monotone" dataKey="Hypertension" stroke={COLORS.critique} strokeWidth={3} dot={{ fill: COLORS.critique, r: 4, strokeWidth: 0 }} activeDot={{ r: 6 }} />
+                            <Line type="monotone" dataKey="Cancer" stroke="#8b5cf6" strokeWidth={3} dot={{ fill: "#8b5cf6", r: 4, strokeWidth: 0 }} activeDot={{ r: 6 }} />
                          </LineChart>
                       </ResponsiveContainer>
                    </div>
                 </div>
 
                 {/* Comparaison OMS */}
-                <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-                   <h3 className="text-md font-bold mb-4 text-gray-700">Comparaison Maroc vs Seuil OMS 2023</h3>
-                   <div className="h-[300px]">
+                <div className="alert-data-card p-6">
+                   <h3 className="font-display font-bold text-[#E8F4FD] mb-6 tracking-wide">Écart vs Seuils OMS (2023)</h3>
+                   <div className="h-[320px]">
                       <ResponsiveContainer width="100%" height="100%">
-                         <BarChart data={thresholdData} layout="vertical" margin={{ left: -10 }}>
-                            <XAxis type="number" stroke="#94a3b8" fontSize={12} />
-                            <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={12} width={100} />
-                            <RechartsTooltip />
-                            <Bar dataKey="Maroc" radius={[0, 4, 4, 0]}>
+                         <BarChart data={thresholdData} layout="vertical" margin={{ left: 10 }}>
+                            <XAxis type="number" stroke="#7A9CBD" fontSize={11} axisLine={{ stroke: 'rgba(0,212,255,0.1)' }} tickLine={false} />
+                            <YAxis dataKey="name" type="category" stroke="#7A9CBD" fontSize={11} width={90} axisLine={false} tickLine={false} />
+                            <RechartsTooltip content={<CustomTooltip />} />
+                            <Bar dataKey="Maroc" radius={[0, 4, 4, 0]} barSize={15}>
                                {thresholdData.map((entry, index) => (
                                  <Cell key={`cell-${index}`} fill={entry.Maroc > entry.OMS ? COLORS.critique : COLORS.ok} />
                                ))}
                             </Bar>
-                            <Bar dataKey="OMS" fill="#cbd5e1" radius={[0, 4, 4, 0]} />
+                            <Bar dataKey="OMS" fill="#1e3a5f" radius={[0, 4, 4, 0]} barSize={15} />
                          </BarChart>
                       </ResponsiveContainer>
+                   </div>
+                   <div className="flex gap-4 text-[10px] font-display text-[#7A9CBD] uppercase justify-center mt-2">
+                       <span className="flex items-center"><span className="w-2 h-2 bg-[#1e3a5f] rounded-full mr-2"></span> Seuil OMS</span>
                    </div>
                 </div>
              </div>
@@ -196,50 +224,50 @@ export default function DashboardPage() {
 
         {/* ======================= TAB 2 ======================== */}
         {activeTab === 2 && (
-          <div className="animate-in fade-in duration-300">
-             <div className="mb-6">
-                <h2 className="text-xl font-bold text-gray-800">Disparités Régionales — 12 Régions Administratives Maroc</h2>
+          <div className="animate-in fade-in duration-500">
+             <div className="mb-8">
+                <h2 className="text-2xl font-display font-bold text-[#E8F4FD]">Cartographie Régionale d'Incidence</h2>
              </div>
              
              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Simulated Choropleth with Tiles & BarChart */}
-                <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col">
-                   <h3 className="text-md font-bold mb-4 text-gray-700">Incidence Tuberculose & Diabète par région</h3>
+                {/* BarChart */}
+                <div className="alert-data-card p-6 flex flex-col">
+                   <h3 className="font-display font-bold text-[#E8F4FD] mb-6 tracking-wide">Incidence Tuberculose par Région (/100k)</h3>
                    <div className="h-[450px]">
                       <ResponsiveContainer width="100%" height="100%">
-                         <BarChart layout="vertical" data={regionData.sort((a,b)=>b.tuberculose-a.tuberculose)} margin={{ left: 30 }}>
-                            <XAxis type="number" stroke="#94a3b8" fontSize={12} />
-                            <YAxis dataKey="region" type="category" stroke="#94a3b8" fontSize={11} width={120} />
-                            <RechartsTooltip />
-                            <Bar dataKey="tuberculose" name="Tuberculose (/100k)" fill={COLORS.primary} radius={[0, 4, 4, 0]} />
+                         <BarChart layout="vertical" data={regionData.sort((a,b)=>b.tuberculose-a.tuberculose)} margin={{ left: 50, right: 10 }}>
+                            <XAxis type="number" stroke="#7A9CBD" fontSize={11} tickLine={false} axisLine={{ stroke: 'rgba(0,212,255,0.1)' }} />
+                            <YAxis dataKey="region" type="category" stroke="#E8F4FD" fontSize={10} width={130} tickLine={false} axisLine={false} />
+                            <RechartsTooltip content={<CustomTooltip />} />
+                            <Bar dataKey="tuberculose" name="Tuberculose" fill={COLORS.primary} radius={[0, 4, 4, 0]} barSize={12} />
                          </BarChart>
                       </ResponsiveContainer>
                    </div>
                 </div>
 
                 {/* Regional Data Table */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-                   <div className="px-5 py-4 border-b border-gray-200 bg-gray-50">
-                      <h3 className="text-md font-bold text-gray-700">Données détaillées par région</h3>
+                <div className="alert-data-card overflow-hidden flex flex-col">
+                   <div className="px-6 py-5 border-b border-[#00D4FF]/10 bg-[#101F38]">
+                      <h3 className="font-display font-bold text-[#E8F4FD] tracking-wide">Analyse Multicritère Géographique</h3>
                    </div>
-                   <div className="overflow-x-auto flex-1 h-[450px] overflow-y-auto">
-                      <table className="w-full text-left text-sm text-gray-600">
-                         <thead className="text-xs text-gray-500 uppercase bg-gray-50 sticky top-0">
+                   <div className="overflow-x-auto flex-1 h-[450px] overflow-y-auto hide-scrollbar">
+                      <table className="w-full text-left text-sm text-[#E8F4FD]">
+                         <thead className="text-[10px] text-[#7A9CBD] uppercase tracking-wider font-display bg-[#0B1E3E] sticky top-0 z-10 shadow-sm border-b border-[#00D4FF]/20">
                             <tr>
-                               <th className="px-4 py-3">Région</th>
-                               <th className="px-4 py-3">Diabète (%)</th>
-                               <th className="px-4 py-3">Tuberculose</th>
-                               <th className="px-4 py-3 text-center">Risque global</th>
+                               <th className="px-6 py-4">Région</th>
+                               <th className="px-4 py-4">Diabète</th>
+                               <th className="px-4 py-4">Tuberculose</th>
+                               <th className="px-6 py-4 text-center">Niveau Risque</th>
                             </tr>
                          </thead>
-                         <tbody className="divide-y divide-gray-100">
+                         <tbody className="divide-y divide-[#00D4FF]/5">
                             {regionData.map((reg) => (
-                               <tr key={reg.region} className="hover:bg-gray-50">
-                                  <td className="px-4 py-3 font-medium text-gray-800">{reg.region}</td>
-                                  <td className="px-4 py-3">{reg.diabete}</td>
-                                  <td className="px-4 py-3">{reg.tuberculose}/100k</td>
-                                  <td className="px-4 py-3 text-center">
-                                     <span className="px-2 py-1 rounded text-xs font-bold text-white w-20 inline-block text-center" style={{ backgroundColor: getStatusColor(reg.risque) }}>
+                               <tr key={reg.region} className="hover:bg-[#101F38]/80 transition-colors">
+                                  <td className="px-6 py-4 font-medium">{reg.region}</td>
+                                  <td className="px-4 py-4 text-[#7A9CBD]">{reg.diabete}%</td>
+                                  <td className="px-4 py-4 text-[#7A9CBD]">{reg.tuberculose}</td>
+                                  <td className="px-6 py-4 text-center">
+                                     <span className="px-2 py-1 rounded text-[9px] font-display font-bold uppercase tracking-wider inline-block w-24 border" style={{ backgroundColor: getStatusColor(reg.risque) + '20', color: getStatusColor(reg.risque), borderColor: getStatusColor(reg.risque) + '40' }}>
                                         {reg.risque}
                                      </span>
                                   </td>
@@ -255,37 +283,37 @@ export default function DashboardPage() {
 
         {/* ======================= TAB 3 ======================== */}
         {activeTab === 3 && (
-          <div className="animate-in fade-in duration-300">
-             <div className="mb-6">
-                <h2 className="text-xl font-bold text-gray-800">Tableau de Bord Alertes — Seuils OMS</h2>
+          <div className="animate-in fade-in duration-500">
+             <div className="mb-8">
+                <h2 className="text-2xl font-display font-bold text-[#E8F4FD]">Matrice d'Alertes Sanitaires Actives</h2>
              </div>
              
              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* Table conditionnelle */}
-                <div className="lg:col-span-8 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                   <div className="px-5 py-4 border-b border-gray-200 bg-gray-50 flex items-center">
-                      <ShieldAlert className="w-5 h-5 text-red-500 mr-2" />
-                      <h3 className="text-md font-bold text-gray-700">Alertes actives</h3>
+                <div className="lg:col-span-8 alert-data-card overflow-hidden">
+                   <div className="px-6 py-5 border-b border-[#00D4FF]/10 bg-[#101F38] flex items-center">
+                      <ShieldAlert className="w-5 h-5 text-[#EF4444] mr-3" />
+                      <h3 className="font-display font-bold text-[#E8F4FD] tracking-wide">Détections Algorithmiques de Seuils</h3>
                    </div>
                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm text-gray-600">
-                         <thead className="text-xs text-gray-500 uppercase bg-white">
+                      <table className="w-full text-left text-sm text-[#E8F4FD]">
+                         <thead className="text-[10px] text-[#7A9CBD] uppercase tracking-wider font-display bg-[#0B1E3E] border-b border-[#00D4FF]/20">
                             <tr>
-                               <th className="px-4 py-3">Maladie</th>
-                               <th className="px-4 py-3">Indicateur</th>
-                               <th className="px-4 py-3 font-bold text-gray-900">Valeur 2023</th>
-                               <th className="px-4 py-3">Seuil OMS</th>
-                               <th className="px-4 py-3">Écart</th>
+                               <th className="px-6 py-4">Maladie</th>
+                               <th className="px-4 py-4">Indicateur</th>
+                               <th className="px-4 py-4 font-bold text-[#00D4FF]">Constat 2023</th>
+                               <th className="px-4 py-4">Alerte Sécu. OMS</th>
+                               <th className="px-6 py-4">Différentiel</th>
                             </tr>
                          </thead>
-                         <tbody className="divide-y divide-gray-100">
+                         <tbody className="divide-y divide-[#00D4FF]/5">
                             {alertData.map((row) => (
-                               <tr key={row.maladie} style={{ backgroundColor: getStatusColor(row.statut) + '1A' }} className="border-l-4" style={{borderLeftColor: getStatusColor(row.statut), backgroundColor: getStatusColor(row.statut) + '1A'}}>
-                                  <td className="px-4 py-3 font-bold text-gray-800">{row.maladie}</td>
-                                  <td className="px-4 py-3">{row.indicateur}</td>
-                                  <td className="px-4 py-3 font-extrabold" style={{ color: getStatusColor(row.statut) }}>{row.maroc}</td>
-                                  <td className="px-4 py-3 text-gray-500">{row.oms}</td>
-                                  <td className="px-4 py-3 font-semibold">{row.ecart}</td>
+                               <tr key={row.maladie} style={{ backgroundColor: getStatusColor(row.statut) + '0A' }} className="border-l-4 transition-colors hover:bg-black/20" style={{borderLeftColor: getStatusColor(row.statut)}}>
+                                  <td className="px-6 py-4 font-bold">{row.maladie}</td>
+                                  <td className="px-4 py-4 text-[#7A9CBD]">{row.indicateur}</td>
+                                  <td className="px-4 py-4 font-display font-bold text-[16px]" style={{ color: getStatusColor(row.statut) }}>{row.maroc}</td>
+                                  <td className="px-4 py-4 text-[#7A9CBD]">{row.oms}</td>
+                                  <td className="px-6 py-4 font-medium">{row.ecart}</td>
                                </tr>
                             ))}
                          </tbody>
@@ -295,41 +323,44 @@ export default function DashboardPage() {
 
                 {/* Donut and Gauges */}
                 <div className="lg:col-span-4 flex flex-col gap-6">
-                   <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col items-center justify-center">
-                      <h3 className="text-md font-bold mb-2 text-gray-700 w-full text-left">Répartition statuts OMS</h3>
-                      <div className="h-[150px] w-full relative">
+                   <div className="alert-data-card p-6 flex flex-col items-center justify-center">
+                      <h3 className="font-display font-bold text-[#E8F4FD] tracking-wide w-full text-left mb-4">Répartition des Statuts</h3>
+                      <div className="h-[180px] w-full relative">
                          <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
-                               <Pie data={donutData} innerRadius={40} outerRadius={70} paddingAngle={2} dataKey="value" stroke="none">
+                               <Pie data={donutData} innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value" stroke="none">
                                   {donutData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={entry.color} />
                                   ))}
                                </Pie>
-                               <RechartsTooltip />
+                               <RechartsTooltip content={<CustomTooltip />} />
                             </PieChart>
                          </ResponsiveContainer>
+                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <span className="font-display font-bold text-3xl text-white">5</span>
+                         </div>
                       </div>
-                      <div className="flex gap-4 text-xs font-semibold text-gray-600">
-                         <span className="flex items-center"><span className="w-3 h-3 bg-[#ef4444] rounded-full mr-1"></span> CRITIQUE (3)</span>
-                         <span className="flex items-center"><span className="w-3 h-3 bg-[#f97316] rounded-full mr-1"></span> DEPASSE (2)</span>
-                         <span className="flex items-center"><span className="w-3 h-3 bg-[#22c55e] rounded-full mr-1"></span> OK (0)</span>
+                      <div className="flex gap-4 text-[10px] font-display font-bold uppercase tracking-wider text-[#7A9CBD] mt-2">
+                         <span className="flex items-center"><span className="w-2.5 h-2.5 bg-[#EF4444] rounded-sm mr-2 shadow-[0_0_5px_#EF4444]"></span> Critique (3)</span>
+                         <span className="flex items-center"><span className="w-2.5 h-2.5 bg-[#F97316] rounded-sm mr-2 shadow-[0_0_5px_#F97316]"></span> Dépassé (2)</span>
+                         <span className="flex items-center"><span className="w-2.5 h-2.5 bg-[#22C55E] rounded-sm mr-2 shadow-[0_0_5px_#22C55E]"></span> Ok (0)</span>
                       </div>
                    </div>
 
-                   <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-                      <h3 className="text-md font-bold mb-3 text-gray-700">Recommandations OMS</h3>
-                      <ul className="space-y-3 text-sm text-gray-600">
-                         <li className="flex gap-2">
-                           <ShieldAlert className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                           <span><b>Tuberculose :</b> Renforcer le programme PNLT, dépistage actif.</span>
+                   <div className="alert-data-card p-6 status-blue flex-1">
+                      <h3 className="font-display font-bold text-[#E8F4FD] tracking-wide mb-5">Mesures Correctives OMS</h3>
+                      <ul className="space-y-4 text-sm text-[#E8F4FD]">
+                         <li className="flex gap-3 bg-[#101F38] p-3 border border-[#EF4444]/20 rounded-lg">
+                           <ShieldAlert className="w-5 h-5 text-[#EF4444] shrink-0" />
+                           <span className="leading-relaxed"><b>Tuberculose :</b> Renforcer immédiatement le programme PNLT, dépistage actif.</span>
                          </li>
-                         <li className="flex gap-2">
-                           <ShieldAlert className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                           <span><b>Hypertension :</b> Campagnes de prévention, réduction sel.</span>
+                         <li className="flex gap-3 bg-[#101F38] p-3 border border-[#EF4444]/20 rounded-lg">
+                           <ShieldAlert className="w-5 h-5 text-[#EF4444] shrink-0" />
+                           <span className="leading-relaxed"><b>Hypertension :</b> Campagnes drastiques de prévention, urgence de réduction sel.</span>
                          </li>
-                         <li className="flex gap-2">
-                           <ShieldAlert className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                           <span><b>Cardiovasculaires :</b> Promotion activité physique, alimentation.</span>
+                         <li className="flex gap-3 bg-[#101F38] p-3 border border-[#EF4444]/20 rounded-lg">
+                           <ShieldAlert className="w-5 h-5 text-[#EF4444] shrink-0" />
+                           <span className="leading-relaxed"><b>Cardio :</b> Promotion vitale de l'activité physique, révision de l'alimentation.</span>
                          </li>
                       </ul>
                    </div>
@@ -340,39 +371,51 @@ export default function DashboardPage() {
 
         {/* ======================= TAB 4 ======================== */}
         {activeTab === 4 && (
-          <div className="animate-in fade-in duration-300">
-             <div className="mb-6">
-                <h2 className="text-xl font-bold text-gray-800">Architecture Pipeline SEHHA DATA</h2>
+          <div className="animate-in fade-in duration-500">
+             <div className="mb-8">
+                <h2 className="text-2xl font-display font-bold text-[#E8F4FD]">Diagnostic Pipeline Data</h2>
              </div>
              
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
                 {/* Schema Flux */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                   <h3 className="text-md font-bold mb-6 text-gray-700 flex items-center"><Activity className="w-5 h-5 mr-2 text-[#0ea5e9]" /> Schéma flux de données</h3>
+                <div className="alert-data-card p-8">
+                   <h3 className="font-display font-bold text-[#E8F4FD] tracking-wide mb-8 flex items-center"><Activity className="w-5 h-5 mr-3 text-[#00D4FF]" /> Schéma Data-Flow Architectural</h3>
                    
-                   <div className="flex flex-col items-center gap-2">
-                      <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg w-full text-center">
-                         <b>Sources officielles</b> (DELM, OMS, HCP/ENPS)
+                   <div className="flex flex-col items-center gap-3">
+                      <div className="bg-[#101F38] border border-[#7A9CBD]/30 p-4 rounded-xl w-full text-center text-sm shadow-md">
+                         <span className="font-display font-bold text-white tracking-widest text-[11px] uppercase block mb-1">Sources Brutes Officielles</span>
+                         <span className="text-[#7A9CBD]">DELM · OMS Maroc · HCP/ENPS</span>
                       </div>
-                      <div className="h-4 w-0.5 bg-gray-300"></div>
-                      <div className="bg-purple-50 border border-purple-200 p-3 rounded-lg w-64 text-center">
-                         🤖 Extraction IA (OCR / Parsing)
+                      <div className="h-6 w-[1px] bg-[#00D4FF] opacity-50 relative">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#00D4FF] shadow-[0_0_8px_#00D4FF] animate-pulseDot"></div>
                       </div>
-                      <div className="h-4 w-0.5 bg-gray-300"></div>
-                      <div className="bg-green-50 border border-green-200 p-3 rounded-lg w-full text-center">
-                         <b>Google Sheets</b> (Base de données structurée)
+                      <div className="bg-[#101F38] border border-[#8b5cf6]/50 p-4 rounded-xl w-64 text-center text-sm shadow-md">
+                         <span className="font-bold text-[#8b5cf6]">Extraction OCR / Parsing IA</span>
                       </div>
-                      <div className="h-4 w-0.5 bg-gray-300"></div>
-                      <div className="flex w-full gap-4 justify-center">
-                         <div className="bg-orange-50 border border-orange-200 p-3 flex-1 rounded-lg text-center font-bold">n8n / Automatisations</div>
-                         <div className="bg-slate-100 border border-slate-300 p-3 flex-1 rounded-lg text-center font-bold">Modèles LLM</div>
+                      <div className="h-6 w-[1px] bg-[#00D4FF] opacity-50"></div>
+                      <div className="bg-[#101F38] border border-[#22C55E]/50 p-4 rounded-xl w-full text-center text-sm shadow-md">
+                         <span className="font-display font-bold text-[#4ade80] tracking-widest text-[11px] uppercase block mb-1">Dépôt Structuré</span>
+                         Google Sheets (Data Lake Opérationnel)
                       </div>
-                      <div className="flex gap-16 mt-1">
-                         <div className="h-4 w-0.5 bg-gray-300"></div>
-                         <div className="h-4 w-0.5 bg-gray-300"></div>
+                      <div className="flex h-6">
+                         <div className="w-[1px] h-full bg-[#00D4FF] opacity-50 transform -rotate-[30deg] translate-x-[40px] translate-y-3"></div>
+                         <div className="w-[1px] h-full bg-[#00D4FF] opacity-50 transform rotate-[30deg] -translate-x-[40px] translate-y-3"></div>
                       </div>
-                      <div className="bg-gray-800 text-white p-4 rounded-lg w-full text-center font-bold shadow-md">
+                      <div className="flex w-full gap-4 justify-center mt-3">
+                         <div className="bg-[#101F38] border border-[#F97316]/50 p-4 flex-1 rounded-xl text-center shadow-md">
+                           <span className="font-display font-bold text-[#fb923c] tracking-widest text-[11px] uppercase block">Automatisations n8n</span>
+                         </div>
+                         <div className="bg-[#101F38] border border-[#00D4FF]/50 p-4 flex-1 rounded-xl text-center shadow-md">
+                           <span className="font-display font-bold text-[#00D4FF] tracking-widest text-[11px] uppercase block">Modéles LLM (GPT-4)</span>
+                         </div>
+                      </div>
+                      <div className="flex h-6 mt-1">
+                         <div className="w-[1px] h-full bg-[#00D4FF] opacity-50 transform rotate-[30deg] translate-x-[40px] -translate-y-3"></div>
+                         <div className="w-[1px] h-full bg-[#00D4FF] opacity-50 transform -rotate-[30deg] -translate-x-[40px] -translate-y-3"></div>
+                      </div>
+                      <div className="bg-[#0B1E3E] text-white p-5 border border-[#00D4FF] rounded-xl w-full text-center font-display font-bold shadow-[0_0_20px_rgba(0,212,255,0.15)] mt-[-10px] z-10 relative overflow-hidden">
+                         <div className="absolute top-0 left-0 right-0 shimmer-line pointer-events-none"></div>
                          BOTPRESS & SEHHA DASHBOARD
                       </div>
                    </div>
@@ -380,24 +423,33 @@ export default function DashboardPage() {
 
                 {/* Scorecard & Structure */}
                 <div className="flex flex-col gap-6">
-                   <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                      <h3 className="text-md font-bold mb-4 text-gray-700 flex items-center"><Database className="w-5 h-5 mr-2 text-[#0ea5e9]" /> Structure Google Sheets</h3>
+                   <div className="alert-data-card p-6 status-blue">
+                      <h3 className="font-display font-bold text-[#E8F4FD] tracking-wide mb-5 flex items-center"><Database className="w-5 h-5 mr-3 text-[#00D4FF]" /> Structure Data Tables</h3>
                       <table className="w-full text-sm">
-                         <tbody className="divide-y divide-gray-100 text-gray-600">
-                            <tr><td className="py-2 font-semibold">Données_brutes</td><td className="py-2">source | région | maladie | année | valeur</td></tr>
-                            <tr><td className="py-2 font-semibold">Indicateurs</td><td className="py-2">taux | mortalité | couverture</td></tr>
-                            <tr><td className="py-2 font-semibold">Tendances</td><td className="py-2">évolution 5 ans (calculs)</td></tr>
-                            <tr><td className="py-2 font-semibold text-red-500">Alertes</td><td className="py-2 text-red-500">seuils dépassés automatisément détectés</td></tr>
+                         <tbody className="divide-y divide-[#00D4FF]/10 text-[#E8F4FD]">
+                            <tr className="hover:bg-[#101F38]"><td className="py-3 px-2 font-display font-bold text-[11px] uppercase tracking-wider text-[#7A9CBD]">Données_brutes</td><td className="py-3 px-2 opacity-80">source | région | maladie | an | val</td></tr>
+                            <tr className="hover:bg-[#101F38]"><td className="py-3 px-2 font-display font-bold text-[11px] uppercase tracking-wider text-[#7A9CBD]">Indicateurs</td><td className="py-3 px-2 opacity-80">taux | mortalité | couverture</td></tr>
+                            <tr className="hover:bg-[#101F38]"><td className="py-3 px-2 font-display font-bold text-[11px] uppercase tracking-wider text-[#7A9CBD]">Tendances</td><td className="py-3 px-2 opacity-80">évolution 5 ans (calculs)</td></tr>
+                            <tr className="hover:bg-[#101F38]"><td className="py-3 px-2 font-display font-bold text-[11px] uppercase tracking-wider text-[#EF4444]">Alertes</td><td className="py-3 px-2 text-[#f87171]">seuils épidémiques dépassés</td></tr>
                          </tbody>
                       </table>
                    </div>
 
-                   <div className="bg-[#fffbeb] p-6 rounded-xl shadow-sm border border-[#fef3c7]">
-                      <h3 className="text-md font-bold mb-3 text-orange-800 flex items-center"><AlertTriangle className="w-5 h-5 mr-2" /> Éthique & Limites (Biais)</h3>
-                      <ul className="text-sm text-orange-900 space-y-2">
-                         <li><b>⚠️ Biais déclaration :</b> sous-déclaration flagrante en zones rurales.</li>
-                         <li><b>⚠️ Biais disponibilité :</b> disparités des données selon les DR Santé.</li>
-                         <li><b>⚠️ Biais causalité :</b> une hausse de détection (meilleur dépistage) peut être confondue avec une hausse d'incidence.</li>
+                   <div className="alert-data-card p-6 status-orange bg-[#F97316]/5">
+                      <h3 className="font-display font-bold text-[#fb923c] tracking-wide mb-4 flex items-center"><AlertTriangle className="w-5 h-5 mr-3" /> Risques Éthiques & Biais</h3>
+                      <ul className="text-sm text-[#E8F4FD] space-y-3 opacity-90">
+                         <li className="flex items-start">
+                           <span className="w-1.5 h-1.5 rounded-full bg-[#F97316] mt-1.5 mr-2 shrink-0"></span>
+                           <div><b className="text-[#fb923c]">Déclaration :</b> Sous-déclaration massive potentielle dans les DR de santé en zones rurales.</div>
+                         </li>
+                         <li className="flex items-start">
+                           <span className="w-1.5 h-1.5 rounded-full bg-[#F97316] mt-1.5 mr-2 shrink-0"></span>
+                           <div><b className="text-[#fb923c]">Disponibilité :</b> Latence forte de publication des bulletins régionaux.</div>
+                         </li>
+                         <li className="flex items-start">
+                           <span className="w-1.5 h-1.5 rounded-full bg-[#F97316] mt-1.5 mr-2 shrink-0"></span>
+                           <div><b className="text-[#fb923c]">Causalité :</b> Une hausse de détection (dépistage actif) peut gonfler l'incidence apparente face aux anciennes données.</div>
+                         </li>
                       </ul>
                    </div>
                 </div>
@@ -407,13 +459,6 @@ export default function DashboardPage() {
         )}
 
       </div>
-
-      {/* FOOTER DASHBOARD */}
-      <div className="bg-slate-800 text-slate-300 text-xs py-4 px-8 flex flex-col md:flex-row justify-between items-center fixed bottom-0 w-full z-50">
-        <p>Sources : DELM · Ministère de la Santé · OMS Bureau Maroc · HCP/ENPS. <i className="opacity-70">Ces données ne constituent pas un avis médical.</i></p>
-        <p className="font-semibold text-[#0ea5e9]">Ministère de la Santé : www.sante.gov.ma · Numéro vert : 080 100 47 47</p>
-      </div>
-
     </div>
   );
 }
