@@ -1,0 +1,319 @@
+{
+  "name": "WF1 — Vérification Mensuelle SEHHA DATA",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 1 * *"
+            }
+          ]
+        }
+      },
+      "id": "45ec810e-389e-42d6-af95-33331ee9ef65",
+      "name": "Cron Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -192,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.sante.gov.ma/Publications/Etudes_enquete/Pages/default.aspx",
+        "options": {
+          "allowUnauthorizedCerts": true,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "id": "d1a29742-4f7c-423c-b787-bb895c7b47ff",
+      "name": "Action 1 — HTTP Request sante.gov.ma",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        16,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition1",
+              "leftValue": "={{ $json.data }}",
+              "rightValue": "bulletin",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c80db9a3-ae42-43a1-8254-c29b47670045",
+      "name": "Action 2 — IF Nouveau Bulletin",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        224,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "sanaaammar214@gmail.com",
+        "subject": "🔔 SEHHA DATA — Nouveau bulletin épidémiologique disponible",
+        "emailType": "text",
+        "message": "Bonjour,\n\nUn nouveau bulletin épidémiologique a été détecté sur sante.gov.ma.\n\n🔗 Lien : https://www.sante.gov.ma/Publications/Etudes_enquete/Pages/default.aspx\n📅 Date de détection : {{ $now.format('dd/MM/yyyy') }}\n\nMerci de lancer WF2 pour mettre à jour les données.\n\nCordialement,\nSystème automatique SEHHA DATA",
+        "options": {}
+      },
+      "id": "52df4ad6-5b5e-4c13-b786-2a3cec123b24",
+      "name": "Action 2b — Envoyer Email Notification",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        416,
+        96
+      ],
+      "webhookId": "51813ed5-853b-44b8-98b2-6e8a7c86ecdd",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "d9YSpykVdiyN8mha",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Db5C2mEFJtKkgHGf9E5RzKxjFWMXqyjueW256KuYTXw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Log_mises_à_jour",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID_Log": "={{ $workflow.id + '_' + $now.format('x') }}",
+            "Date": "={{ $now.format('dd/MM/yyyy HH:mm:ss') }}",
+            "Source": "={{ $node[\"Action 1 — HTTP Request sante.gov.ma\"].parameter[\"url\"] }}.",
+            "Maladie": "=Données épidémiologiques (ou Tuberculose car une revue est mentionnée dans les archives)",
+            "Commentaire": "Bulletin détecté et analysé par le Pipeline SEHHA DATA",
+            "Auteur": "Système SEHHA DATA",
+            "Type_opération": "Mise à jour automatique",
+            "Valeur_après": "=Nouveau bulletin détecté",
+            "Valeur_avant": "Non applicable",
+            "Année_donnée": "=2026 (date des derniers bulletins détectés)",
+            "Région": "=National (le site affiche des enquêtes nationales)"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID_Log",
+              "displayName": "ID_Log",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Maladie",
+              "displayName": "Maladie",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Région",
+              "displayName": "Région",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Année_donnée",
+              "displayName": "Année_donnée",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Valeur_avant",
+              "displayName": "Valeur_avant",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Valeur_après",
+              "displayName": "Valeur_après",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Type_opération",
+              "displayName": "Type_opération",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Auteur",
+              "displayName": "Auteur",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Commentaire",
+              "displayName": "Commentaire",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "e544434d-6980-474d-9493-62dcc8df26b7",
+      "name": "Action 3 — Log dans Log_mises_à_jour",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        416,
+        336
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DOFuMjzfVsjmkuMF",
+          "name": "Google Sheets account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Cron Trigger": {
+      "main": [
+        [
+          {
+            "node": "Action 1 — HTTP Request sante.gov.ma",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Action 1 — HTTP Request sante.gov.ma": {
+      "main": [
+        [
+          {
+            "node": "Action 2 — IF Nouveau Bulletin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Action 2 — IF Nouveau Bulletin": {
+      "main": [
+        [
+          {
+            "node": "Action 2b — Envoyer Email Notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Action 3 — Log dans Log_mises_à_jour",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Action 2b — Envoyer Email Notification": {
+      "main": [
+        [
+          {
+            "node": "Action 3 — Log dans Log_mises_à_jour",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "e1930041-bad1-47f3-8a66-7f8a1a35d6aa",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7505a5492ed0e0aec9eea152a04d0d83e8148dccd6e396d35fe89c785e196c0a"
+  },
+  "id": "ZNbMUkXLk1SSH8JI",
+  "tags": []
+}

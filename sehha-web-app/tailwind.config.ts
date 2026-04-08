@@ -21,7 +21,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: ['var(--font-dmsans)', 'sans-serif'],
-        display: ['var(--font-syne)', 'sans-serif'],
+        display: ['var(--font-outfit)', 'sans-serif'],
       },
       animation: {
         'floatA': 'floatA 5s ease-in-out infinite',

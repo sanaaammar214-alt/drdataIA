@@ -1,0 +1,416 @@
+{
+  "name": "WF2 — SEHHA DATA · Calcul indicateurs",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sehha-calcul-indicateurs",
+        "options": {}
+      },
+      "name": "Webhook WF2",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1904,
+        320
+      ],
+      "id": "4ec27d06-84a5-4a80-96fd-9755b01f1560",
+      "webhookId": "sehha-wf2"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Db5C2mEFJtKkgHGf9E5RzKxjFWMXqyjueW256KuYTXw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Données_brutes",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "name": "Lire Donnees brutes",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -1664,
+        320
+      ],
+      "id": "e14ddcf3-b97c-4f43-9f46-14116c04658a",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DOFuMjzfVsjmkuMF",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\n\nconst seuils = {\n  'Diabète': { indicateur: 'Prévalence (%)', seuil: 10, dir: 'lt' },\n  'Hypertension': { indicateur: 'Prévalence (%)', seuil: 25, dir: 'lt' },\n  'Tuberculose': { indicateur: 'Incidence (/100 000 hab)', seuil: 20, dir: 'lt' },\n  'Cancer': { indicateur: 'Survie à 5 ans (%)', seuil: 60, dir: 'gt' },\n  'Maladies cardiovasculaires': { indicateur: 'Mortalité (/100 000 hab)', seuil: 100, dir: 'lt' }\n};\n\nconst grouped = {};\nfor (const r of rows) {\n  if (!r.Maladie || !r.Valeur || !r.Année) continue;\n  const k = r.Maladie;\n  if (!grouped[k]) grouped[k] = {};\n  grouped[k][String(r.Année)] = parseFloat(r.Valeur);\n}\n\nconst results = [];\nfor (const [maladie, data] of Object.entries(grouped)) {\n  const v2019 = data['2019'], v2022 = data['2022'], v2023 = data['2023'];\n  if (!v2019 || !v2023) continue;\n  const evol5 = ((v2023 - v2019) / v2019 * 100).toFixed(1);\n  const evol1 = v2022 ? ((v2023 - v2022) / v2022 * 100).toFixed(1) : 'N/A';\n  const tendance = parseFloat(evol5) > 1 ? 'Hausse' : parseFloat(evol5) < -1 ? 'Baisse' : 'Stable';\n  const ref = seuils[maladie];\n  let statut = 'OK';\n  if (ref) {\n    const depasse = ref.dir === 'lt' ? v2023 > ref.seuil : v2023 < ref.seuil;\n    if (depasse) {\n      const ecart = Math.abs((v2023 - ref.seuil) / ref.seuil);\n      statut = ecart > 0.2 ? 'CRITIQUE' : 'DEPASSE';\n    }\n  }\n  results.push({ json: { maladie, val_2023: v2023, val_2019: v2019, evol_5ans_pct: evol5, evol_1an_pct: evol1, tendance, statut_OMS: statut, calcul_date: new Date().toLocaleDateString('fr-FR') } });\n}\nreturn results;"
+      },
+      "name": "Calculer indicateurs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1424,
+        320
+      ],
+      "id": "b52337b8-07fc-4546-82df-0ccfe51cdf5d"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.statut_OMS }}",
+              "operation": "notEqual",
+              "value2": "OK"
+            }
+          ]
+        }
+      },
+      "name": "Alerte OMS ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1184,
+        320
+      ],
+      "id": "8633b5d8-a6cc-4a52-9b75-91f231e6a266"
+    },
+    {
+      "parameters": {
+        "fromEmail": "sanaaammar214@gmail.com",
+        "toEmail": "sanaaammar214@gmail.com",
+        "subject": "=SEHHA DATA — {{ $json.statut_OMS }} : {{ $json.maladie }}",
+        "text": "=Alerte epidemiologique detectee :\n\nMaladie : {{ $json.maladie }}\nValeur 2023 : {{ $json.val_2023 }}\nStatut OMS : {{ $json.statut_OMS }}\nEvolution 5 ans : {{ $json.evol_5ans_pct }}%\nTendance : {{ $json.tendance }}\nDate calcul : {{ $json.calcul_date }}\n\n-- SEHHA DATA WF2",
+        "options": {}
+      },
+      "name": "Email alerte OMS",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        -944,
+        192
+      ],
+      "id": "f149d699-8d49-4af9-bf44-9cdf0ec65d32",
+      "webhookId": "32591ed2-1bfb-499c-b0a2-9d998304d557",
+      "credentials": {
+        "smtp": {
+          "id": "nvGbir4m3hjQnQyY",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Db5C2mEFJtKkgHGf9E5RzKxjFWMXqyjueW256KuYTXw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Log_mises_à_jour",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {
+            "ID_Log": "={{ $json[\"id\"] ?? $now.format('X') }}",
+            "Date": "={{ $now.format('DD/MM/YYYY HH:mm') }}",
+            "Source": "Ministère de la Santé (Automatisé)",
+            "Maladie": "={{ $json[\"maladie\"] }}",
+            "Commentaire": "={{ $json[\"tendance\"] }} - OMS: {{ $json[\"statut_OMS\"] }}",
+            "Valeur_après": "={{ $json[\"val_2023\"] }}",
+            "Type_opération": "Calcul indicateurs & Evolution",
+            "Auteur": "Pipeline SEHHA DATA v4"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID_Log",
+              "displayName": "ID_Log",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Maladie",
+              "displayName": "Maladie",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Région",
+              "displayName": "Région",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Année_donnée",
+              "displayName": "Année_donnée",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Valeur_avant",
+              "displayName": "Valeur_avant",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Valeur_après",
+              "displayName": "Valeur_après",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Type_opération",
+              "displayName": "Type_opération",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Auteur",
+              "displayName": "Auteur",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Commentaire",
+              "displayName": "Commentaire",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "maladie",
+              "displayName": "maladie",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "val_2023",
+              "displayName": "val_2023",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "val_2019",
+              "displayName": "val_2019",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "evol_5ans_pct",
+              "displayName": "evol_5ans_pct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "evol_1an_pct",
+              "displayName": "evol_1an_pct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tendance",
+              "displayName": "tendance",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "statut_OMS",
+              "displayName": "statut_OMS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "calcul_date",
+              "displayName": "calcul_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "name": "Log calcul Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -944,
+        432
+      ],
+      "id": "ead9de14-c5f3-449a-93a0-6072204743a1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DOFuMjzfVsjmkuMF",
+          "name": "Google Sheets account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook WF2": {
+      "main": [
+        [
+          {
+            "node": "Lire Donnees brutes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lire Donnees brutes": {
+      "main": [
+        [
+          {
+            "node": "Calculer indicateurs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculer indicateurs": {
+      "main": [
+        [
+          {
+            "node": "Alerte OMS ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alerte OMS ?": {
+      "main": [
+        [
+          {
+            "node": "Email alerte OMS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log calcul Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email alerte OMS": {
+      "main": [
+        []
+      ]
+    },
+    "Log calcul Sheets": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "74dc2bfe-564d-4d31-ba49-665d43c9b4b1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7505a5492ed0e0aec9eea152a04d0d83e8148dccd6e396d35fe89c785e196c0a"
+  },
+  "id": "8JF05NqMMGjYvYNi",
+  "tags": []
+}

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Syne, DM_Sans } from "next/font/google";
+import { Outfit, DM_Sans } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import BotpressChat from "@/components/BotpressChat";
 
-const syne = Syne({ subsets: ["latin"], weight: ["700", "800"], variable: '--font-syne' });
+const outfit = Outfit({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: '--font-outfit' });
 const dmSans = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "700"], variable: '--font-dmsans' });
 
 export const metadata: Metadata = {
@@ -18,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className={`${syne.variable} ${dmSans.variable} scroll-smooth`}>
+    <html lang="fr" className={`${outfit.variable} ${dmSans.variable} scroll-smooth`}>
       <body className="min-h-screen flex flex-col font-sans bg-[#0B1E3E] text-[#E8F4FD]">
         <div className="fixed inset-0 dot-grid-overlay pointer-events-none z-0"></div>
         <div className="fixed inset-0 radial-glow pointer-events-none z-0"></div>

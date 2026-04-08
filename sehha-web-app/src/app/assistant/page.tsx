@@ -60,32 +60,14 @@ export default function AssistantPage() {
             {/* Decorative background glow */}
             <div className="absolute top-0 left-0 right-0 bottom-0 bg-[radial-gradient(ellipse_80%_50%_at_center,_rgba(0,212,255,0.04)_0%,_transparent_100%)]"></div>
 
-            {/* Placeholder — remplacer par votre script Botpress */}
-            <div className="relative z-10 text-center max-w-lg px-8">
-              <div className="w-24 h-24 rounded-full bg-[#152843] border border-[#00D4FF]/20 flex items-center justify-center mx-auto mb-8 shadow-[0_0_40px_rgba(0,212,255,0.1)]">
-                <Bot className="w-12 h-12 text-[#00D4FF]/60" />
-              </div>
-              <h3 className="font-display font-bold text-xl text-[#E8F4FD] mb-3 tracking-tight">
-                Widget Botpress Prêt à Intégrer
-              </h3>
-              <p className="text-[#7A9CBD] text-sm leading-relaxed mb-8">
-                Insérez votre script d'injection Botpress ci-dessous pour activer le chat IA interactif.
-                Le professeur et les utilisateurs pourront poser des questions en illimité.
-              </p>
-              <div className="bg-[#152843] border border-[#00D4FF]/15 rounded-xl p-4 text-left font-mono text-xs text-[#00D4FF]/70 mb-8 overflow-x-auto">
-                <span className="text-[#7A9CBD]">{'// Remplacer par votre script Botpress :'}</span><br/>
-                <span className="text-[#F97316]">{'<script'}</span> <span className="text-[#22C55E]">src</span>=<span className="text-[#E8F4FD]">"https://cdn.botpress.cloud/webchat/v2/..."</span> <span className="text-[#F97316]">{'>'}</span>
-              </div>
-              <a
-                href="https://botpress.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#00D4FF] text-[#0B1E3E] font-display font-bold text-sm hover:bg-white transition-all glow-box transform hover:-translate-y-0.5"
-              >
-                <Globe className="w-4 h-4" />
-                Configurer Botpress →
-              </a>
-            </div>
+            <iframe
+              src="https://cdn.botpress.cloud/webchat/v3.6/shareable.html?configUrl=https://files.bpcontent.cloud/2026/04/07/20/20260407203338-GT1XW8IT.json"
+              width="100%"
+              height="100%"
+              className="relative z-10"
+              style={{ border: 'none', background: 'transparent' }}
+              title="Chatbot Dr. Sehha"
+            />
           </div>
         </div>
 

@@ -1,0 +1,267 @@
+{
+  "name": "WF3 — SEHHA DATA · Rapport citoyen LLM (FIXED)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sehha-rapport-citoyen",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook Botpress1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -864,
+        1376
+      ],
+      "id": "cd76f201-c443-40da-8496-2e912bf31211",
+      "webhookId": "1638efa5-1b89-4f87-9e62-66d43abd603c"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      type_rapport: $json.body?.type_rapport || \"botpress\",\n      question: $json.body?.question || \"Donne un résumé de la situation sanitaire\",\n      region: $json.body?.region || \"Maroc\",\n      user_id: $json.body?.user_id || \"user_1\"\n    }\n  }\n];"
+      },
+      "name": "Extraire parametres1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -624,
+        1376
+      ],
+      "id": "ccb95331-d0db-435a-8c20-1b1d693f84ae"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Db5C2mEFJtKkgHGf9E5RzKxjFWMXqyjueW256KuYTXw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Indicateurs",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "name": "Lire Indicateurs1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -368,
+        1232
+      ],
+      "id": "4d53fe34-dc64-4027-96bd-647141c4e8af",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DOFuMjzfVsjmkuMF",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Db5C2mEFJtKkgHGf9E5RzKxjFWMXqyjueW256KuYTXw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2105594105,
+          "mode": "list",
+          "cachedResultName": "Alertes",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Db5C2mEFJtKkgHGf9E5RzKxjFWMXqyjueW256KuYTXw/edit#gid=2105594105"
+        },
+        "options": {}
+      },
+      "name": "Lire Alertes1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -384,
+        1440
+      ],
+      "id": "93a1bdc4-1ec0-4e6f-bcb1-529b5fe3d36b",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DOFuMjzfVsjmkuMF",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Db5C2mEFJtKkgHGf9E5RzKxjFWMXqyjueW256KuYTXw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1780454475,
+          "mode": "list",
+          "cachedResultName": "Vue_Régionale",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Db5C2mEFJtKkgHGf9E5RzKxjFWMXqyjueW256KuYTXw/edit#gid=1780454475"
+        },
+        "options": {}
+      },
+      "name": "Lire Vue Regionale1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -384,
+        1616
+      ],
+      "id": "bb929736-485d-4e4a-a0e9-f6a2cf0098dc",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DOFuMjzfVsjmkuMF",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const indicateurs = $('Lire Indicateurs1').all().map(i => i.json);\nconst alertes = $('Lire Alertes1').all().map(i => i.json);\nconst regional = $('Lire Vue Regionale1').all().map(i => i.json);\nconst params = $('Extraire parametres1').first().json;\n\nconst fullSnapshot = JSON.stringify({ indicateurs, alertes, regional });\nconst snapshot = fullSnapshot.length > 3000 \n  ? fullSnapshot.slice(0, 3000) + '...[tronqué]' \n  : fullSnapshot;\n\nreturn [{\n  json: {\n    type_rapport: params.type_rapport,\n    question: params.question,\n    region: params.region,\n    user_id: params.user_id,\n    snapshot: snapshot\n  }\n}];"
+      },
+      "name": "Construire snapshot1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        1168
+      ],
+      "id": "6a9e661d-3b5c-41e4-9f97-0b73bf3d1269"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "name": "Reponse Botpress1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        688,
+        1232
+      ],
+      "id": "dbf22327-8cf1-44ef-ae09-a432ca6696ab"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -112,
+        1136
+      ],
+      "id": "77884bf4-0930-42ad-981e-f898dec3f2a3",
+      "name": "Merge1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Botpress1": {
+      "main": [
+        [
+          {
+            "node": "Extraire parametres1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraire parametres1": {
+      "main": [
+        [
+          {
+            "node": "Lire Indicateurs1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Lire Alertes1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Lire Vue Regionale1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lire Indicateurs1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lire Alertes1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Lire Vue Regionale1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Construire snapshot1": {
+      "main": [
+        [
+          {
+            "node": "Reponse Botpress1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Construire snapshot1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "bfbdb03c-edd3-48cb-a1f1-c56cdd8098a4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7505a5492ed0e0aec9eea152a04d0d83e8148dccd6e396d35fe89c785e196c0a"
+  },
+  "id": "Li9PKYgsYWYQdkNo",
+  "tags": []
+}
